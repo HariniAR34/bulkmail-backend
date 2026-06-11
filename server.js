@@ -7,7 +7,7 @@ const nodemailer = require('nodemailer');
 const Email = require('./models/Email');
 
 const app = express();
-const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
+const allowedOrigin = 'https://bulkmail-frontend-hazel.vercel.app/' || 'http://localhost:3000';
 app.use(cors({
   origin: allowedOrigin,
   methods: ['GET', 'POST', 'OPTIONS']
