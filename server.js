@@ -23,9 +23,15 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log('MongoDB connected:', mongoose.connection.name))
   .catch(err => console.error('MongoDB connection error', err));
 
+let transporterPromise;
+
 async function createTransporter() {
+  if (transporterPromise) {
+    return transporterPromise;
+  }
+
   if (process.env.SMTP_HOST && process.env.SMTP_USER) {
-    return nodemailer.createTransport({
+    transporterPromise = Promise.resolve(nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587,
       secure: process.env.SMTP_SECURE === 'true',
@@ -33,18 +39,23 @@ async function createTransporter() {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
       }
-    });
+    }));
+
+    return transporterPromise;
   }
 
-  const testAccount = await nodemailer.createTestAccount();
-  return nodemailer.createTransport({
-    host: 'smtp.ethereal.email',
-    port: 587,
-    auth: {
-      user: testAccount.user,
-      pass: testAccount.pass
-    }
+  transporterPromise = nodemailer.createTestAccount().then((testAccount) => {
+    return nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass
+      }
+    });
   });
+
+  return transporterPromise;
 }
 
 app.post('/api/send', async (req, res) => {
